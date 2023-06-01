@@ -12,6 +12,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         with open(
             f'{settings.BASE_DIR}/data/tags.csv',
+            # f'{settings.STATIC_ROOT}/data/tags.csv',
             'r',
             encoding='utf-8'
         ) as csv_file:

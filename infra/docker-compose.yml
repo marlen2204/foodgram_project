@@ -9,7 +9,7 @@ services:
       - ./.env
 
   backend:
-    image: maksprots/foodgram_backend:latest
+    image: agnidock/foodgram_backend:v1
     restart: always
     volumes:
       - static_value:/app/static/
@@ -20,7 +20,7 @@ services:
       - ./.env
 
   frontend:
-    image: maksprots/foodgram_backend:latest
+    image: agnidock/foodgram_frontend:v1
     volumes:
       - ../frontend/:/app/result_build/
     depends_on:

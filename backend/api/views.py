@@ -3,6 +3,8 @@ from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from djoser.views import UserViewSet
+from recipes.models import (FavoriteRecipe, Ingredient, Recipe, ShoppingCart,
+                            Subscribe, Tag)
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import (SAFE_METHODS, IsAuthenticated,
@@ -14,19 +16,16 @@ from .mixins import CreateDestroyViewSet
 from .permissions import IsAuthorOrReadOnly
 from .serializers import (FavoriteRecipeSerializer, IngredientSerializer,
                           RecipeEditSerializer, RecipeReadSerializer,
-                          SetPasswordSerializer, CartSerializer,
+                          SetPasswordSerializer, ShoppingCartSerializer,
                           SubscribeSerializer, TagSerializer,
                           UserCreateSerializer, UserListSerializer)
-from recipes.models import (FavoriteRecipe, Ingredient, Recipe, Cart,
-                            Subscribe, Tag)
 
 User = get_user_model()
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
-    permission_classes = (IsAuthenticatedOrReadOnly,
-                          IsAuthorOrReadOnly)
+    permission_classes = (IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly)
     filterset_class = RecipesFilter
 
     def get_serializer_class(self):
@@ -44,7 +43,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         pagination_class=None)
     def download_file(self, request):
         user = request.user
-        if not user.cart.exists():
+        if not user.shopping_cart.exists():
             return Response(
                 'В корзине нет товаров', status=status.HTTP_400_BAD_REQUEST)
 
@@ -53,9 +52,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
         ingredient_unit = 'recipe__recipe__ingredient__measurement_unit'
         recipe_amount = 'recipe__recipe__amount'
         amount_sum = 'recipe__recipe__amount__sum'
-        cart = user.cart.select_related('recipe').values(
-            ingredient_name, ingredient_unit).annotate(Sum(recipe_amount)) \
-            .order_by(ingredient_name)
+        cart = user.shopping_cart.select_related('recipe').values(
+            ingredient_name, ingredient_unit).annotate(Sum(
+                recipe_amount)).order_by(ingredient_name)
         for _ in cart:
             text += (
                 f'{_[ingredient_name]} ({_[ingredient_unit]})'
@@ -107,7 +106,7 @@ class CustomUserViewSet(UserViewSet):
         serializer = SubscribeSerializer(
             pages,
             many=True,
-            context={'request': request}, )
+            context={'request': request},)
         return self.get_paginated_response(serializer.data)
 
 
@@ -171,8 +170,8 @@ class FavoriteRecipeViewSet(CreateDestroyViewSet):
     def delete(self, request, recipe_id):
         u = request.user
         if not u.favorite.select_related(
-                'favorite_recipe').filter(favorite_recipe_id=recipe_id) \
-                .exists():
+                'favorite_recipe').filter(
+                    favorite_recipe_id=recipe_id).exists():
             return Response({'errors': 'Рецепт не в избранном'},
                             status=status.HTTP_400_BAD_REQUEST)
         get_object_or_404(
@@ -182,12 +181,12 @@ class FavoriteRecipeViewSet(CreateDestroyViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class CartViewSet(CreateDestroyViewSet):
-    serializer_class = CartSerializer
+class ShoppingCartViewSet(CreateDestroyViewSet):
+    serializer_class = ShoppingCartSerializer
 
     def get_queryset(self):
         user = self.request.user.id
-        return Cart.objects.filter(user=user)
+        return ShoppingCart.objects.filter(user=user)
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
@@ -207,11 +206,12 @@ class CartViewSet(CreateDestroyViewSet):
     def delete(self, request, recipe_id):
         u = request.user
         if not u.shopping_cart.select_related(
-                'recipe').filter(recipe_id=recipe_id).exists():
+                'recipe').filter(
+                    recipe_id=recipe_id).exists():
             return Response({'errors': 'Рецепта нет в корзине'},
                             status=status.HTTP_400_BAD_REQUEST)
         get_object_or_404(
-            Cart,
+            ShoppingCart,
             user=request.user,
             recipe=recipe_id).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)

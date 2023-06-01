@@ -1,26 +1,26 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-from django.conf import settings
 
 
 class User(AbstractUser):
     username = models.CharField(
-        verbose_name='Логин',
-        max_length=settings.MAX_LEN_USER_FIELD,
-        unique=True)
+        'Логин',
+        max_length=150,
+        unique=True,
+    )
     email = models.EmailField(
-        verbose_name='Email',
-        max_length=settings.MAX_LEN_USER_EMAIL,
-        unique=True)
+        'Email',
+        max_length=254,
+        unique=True,
+    )
     first_name = models.CharField(
-        verbose_name='Имя',
-        max_length=settings.MAX_LEN_USER_FIELD, )
+        'Имя',
+        max_length=150,
+    )
     last_name = models.CharField(
-        verbose_name='Фамилия',
-        max_length=settings.MAX_LEN_USER_FIELD)
-    password = models.CharField(
-        verbose_name='Пароль',
-        max_length=settings.MAX_LEN_USER_FIELD)
+        'Фамилия',
+        max_length=150,
+    )
 
     class Meta:
         ordering = ('username',)
